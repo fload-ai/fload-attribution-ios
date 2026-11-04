@@ -6,7 +6,26 @@ third-party dependencies. iOS 15+.
 
 ## Install
 
-Swift Package Manager: add this repository's URL and the `FloadAttribution` product.
+Swift Package Manager. In Xcode: File > Add Package Dependencies, enter
+`https://github.com/fload-ai/fload-attribution-ios.git`, choose "Up to Next
+Major Version" from `1.0.0`, and add the `FloadAttribution` product to your app
+target.
+
+In a `Package.swift`:
+
+```swift
+dependencies: [
+    .package(url: "https://github.com/fload-ai/fload-attribution-ios.git", from: "1.0.0"),
+],
+targets: [
+    .target(
+        name: "YourApp",
+        dependencies: [
+            .product(name: "FloadAttribution", package: "fload-attribution-ios"),
+        ]
+    ),
+]
+```
 
 ## Use
 
@@ -74,3 +93,7 @@ Fload.configure(key: key, options: FloadOptions(endpoint: URL(string: "http://lo
 Unit tests: `xcodebuild test -scheme FloadAttribution -destination 'platform=iOS Simulator,name=iPhone 17'`.
 The end-to-end test runs only against a local API, when
 `TEST_RUNNER_FLOAD_E2E_ENDPOINT` and `TEST_RUNNER_FLOAD_E2E_KEY` are set.
+
+## License
+
+License: MIT. See [LICENSE](LICENSE).
