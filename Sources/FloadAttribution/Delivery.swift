@@ -4,8 +4,11 @@ import Foundation
 enum Outcome: Equatable, Sendable {
     /// 2xx: Fload has it (a repeat included). Delete it.
     case delivered
-    /// Fload will never take it (400, 401, 413). Delete it.
+    /// Fload will never take it (400, 413). Delete it.
     case dropped(status: Int)
+    /// 401: the key is unknown to Fload. Keep the queue (a wrong key in one
+    /// build must not lose its installs) and pause this key for a day.
+    case keyRefused
     /// 410: the key was revoked. Stop sending with it, for good.
     case revoked
     /// 429: wait what the server asked, then go on.
@@ -22,13 +25,17 @@ enum Delivery {
     static let maxQueuedIdentifies = 20
     /// Times Apple's token is asked for again before the install goes without it.
     static let maxTokenRetries = 3
+    /// How long a refused (401) key waits before it is tried again.
+    static let refusedKeyPause: TimeInterval = 24 * 3600
 
     static func outcome(of response: TransportResponse) -> Outcome {
         switch response.status {
         case 200..<300:
             return .delivered
-        case 400, 401, 413:
+        case 400, 413:
             return .dropped(status: response.status)
+        case 401:
+            return .keyRefused
         case 410:
             return .revoked
         case 429:

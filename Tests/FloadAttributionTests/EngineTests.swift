@@ -157,7 +157,7 @@ final class EngineTests: XCTestCase {
     }
 
     func testRefusedRequestsAreDropped() async throws {
-        for status in [400, 401, 413] {
+        for status in [400, 413] {
             let harness = Harness()
             harness.transport.script(status: status)
             let engine = try XCTUnwrap(harness.launch())
@@ -165,6 +165,72 @@ final class EngineTests: XCTestCase {
             let state = await engine.snapshot
             XCTAssertTrue(state.queue.isEmpty, "HTTP \(status) drops the request")
         }
+    }
+
+    func testRefusedKeyHoldsTheQueueAndRetriesEveryDay() async throws {
+        let harness = Harness()
+        harness.transport.script(status: 401)
+        harness.transport.script(status: 401)
+        let engine = try XCTUnwrap(harness.launch())
+        await engine.flush()
+        await engine.setUserId("anonymous") // rides in the held install
+        await engine.setUserId("signed-in") // an identify behind it
+
+        harness.clock.advance(24 * 3600 - 1)
+        await engine.flush()
+        let relaunched = try XCTUnwrap(harness.launch())
+        await relaunched.flush()
+        XCTAssertEqual(harness.transport.requests.count, 1, "nothing is sent with the key for 24 h, relaunch or not")
+        let held = await relaunched.snapshot
+        XCTAssertEqual(held.queue.map(\.kind), [.install, .identify], "a 401 drops nothing")
+
+        harness.clock.advance(1)
+        await relaunched.flush() // 401 again: another day
+        XCTAssertEqual(harness.transport.requests.count, 2)
+        harness.clock.advance(24 * 3600 - 1)
+        await relaunched.flush()
+        XCTAssertEqual(harness.transport.requests.count, 2)
+
+        harness.clock.advance(1)
+        await relaunched.flush() // the key works now: everything goes
+        XCTAssertEqual(harness.transport.paths, [
+            "/attribution/v1/installs",
+            "/attribution/v1/installs",
+            "/attribution/v1/installs",
+            "/attribution/v1/identify",
+        ])
+        let done = await relaunched.snapshot
+        XCTAssertTrue(done.queue.isEmpty)
+        XCTAssertTrue(done.refusedKeys.isEmpty)
+        XCTAssertEqual(harness.transport.bodies[2]["appUserId"] as? String, "anonymous")
+    }
+
+    func testARefusedKeysQueueGoesAtOnceWithANewKey() async throws {
+        let harness = Harness()
+        harness.transport.script(status: 401)
+        let engine = try XCTUnwrap(harness.launch())
+        await engine.flush()
+
+        let fixed = try XCTUnwrap(harness.launch(key: "fload_pk_fixed_0123456789"))
+        await fixed.flush()
+        XCTAssertEqual(harness.transport.requests.count, 2)
+        XCTAssertEqual(harness.transport.requests.last?.value(forHTTPHeaderField: "X-Fload-Write-Key"), "fload_pk_fixed_0123456789")
+        let done = await fixed.snapshot
+        XCTAssertTrue(done.queue.isEmpty)
+    }
+
+    func testARefusedKeysQueueIsDroppedAfterThirtyDays() async throws {
+        let harness = Harness()
+        for _ in 0..<40 { harness.transport.script(status: 401) }
+        let engine = try XCTUnwrap(harness.launch())
+        for _ in 0...30 {
+            await engine.flush()
+            harness.clock.advance(24 * 3600)
+        }
+        await engine.flush()
+        XCTAssertEqual(harness.transport.requests.count, 31, "one try a day, day 0 through day 30, then dropped")
+        let state = await engine.snapshot
+        XCTAssertTrue(state.queue.isEmpty)
     }
 
     func testRevokedKeyStopsForGoodUntilANewKey() async throws {

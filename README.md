@@ -39,6 +39,9 @@ installs for that one app, so it is safe to ship in the binary.
   Requests are idempotent: a retry repeats the same ids.
 - It sends when configured, when the app returns to the foreground and when
   the network comes back. All work runs off the main thread.
+- A key Fload does not know (HTTP 401) keeps the queue: the SDK logs
+  "Fload: ingest key refused" once a launch, tries the key again every 24
+  hours, and sends at once when the app is configured with a different key.
 - A revoked key (HTTP 410) stops the SDK for good until the app ships a new key.
 
 It logs to the unified log (subsystem `com.fload.attribution`) at `.warning`

@@ -13,6 +13,7 @@ actor Engine {
     /// The request being sent right now; it is not edited while in flight.
     private var inFlight: String?
     private var wakeTask: Task<Void, Never>?
+    private var warnedKeyRefused = false
 
     init(key: String, state: StoredState, environment: Environment) {
         self.key = key
@@ -83,9 +84,16 @@ actor Engine {
 
     private var revoked: Bool { state.revokedKeys.contains(keyFingerprint) }
 
+    /// When a refused (401) key may be tried again; nil when it is not refused.
+    private var refusedUntil: Date? { state.refusedKeys[keyFingerprint] }
+
     private func sendDue() async {
         guard !revoked else { return }
         dropExpired()
+        if let refusedUntil, refusedUntil > environment.now() {
+            warnKeyRefused()
+            return
+        }
         while let head = state.queue.first, head.nextAttemptAt <= environment.now() {
             let outcome = await attempt(head)
             guard apply(outcome, to: head.requestId) else { return }
@@ -181,9 +189,14 @@ actor Engine {
         case .sent(.delivered):
             environment.logger.info("Fload: \(state.queue[index].kind.rawValue) accepted.")
             state.queue.remove(at: index)
+            state.refusedKeys[keyFingerprint] = nil
             return true
+        case .sent(.keyRefused):
+            state.refusedKeys[keyFingerprint] = now + Delivery.refusedKeyPause
+            warnKeyRefused()
+            return false
         case let .sent(.dropped(status)):
-            environment.logger.error("Fload: the \(state.queue[index].kind.rawValue) was refused (HTTP \(status)) and dropped. Check the write key.")
+            environment.logger.error("Fload: the \(state.queue[index].kind.rawValue) was refused (HTTP \(status)) and dropped.")
             state.queue.remove(at: index)
             return true
         case .sent(.revoked):
@@ -203,6 +216,13 @@ actor Engine {
         }
     }
 
+    /// One warning a launch while Fload does not know this key.
+    private func warnKeyRefused() {
+        guard !warnedKeyRefused else { return }
+        warnedKeyRefused = true
+        environment.logger.warning("Fload: ingest key refused (HTTP 401). Check the key passed to Fload.configure; installs stay queued and the key is tried again every 24 hours.")
+    }
+
     private func persist() {
         do {
             try environment.store.save(state)
@@ -218,7 +238,8 @@ actor Engine {
         wakeTask?.cancel()
         wakeTask = nil
         guard environment.schedulesWakeups, !revoked, let head = state.queue.first else { return }
-        let delay = max(0, head.nextAttemptAt.timeIntervalSince(environment.now()))
+        let due = max(head.nextAttemptAt, refusedUntil ?? .distantPast)
+        let delay = max(0, due.timeIntervalSince(environment.now()))
         wakeTask = Task { [weak self] in
             try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
             guard !Task.isCancelled else { return }

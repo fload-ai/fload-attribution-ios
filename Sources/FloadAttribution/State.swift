@@ -14,6 +14,25 @@ struct StoredState: Codable, Equatable, Sendable {
     var lastUserId: String?
     /// SHA-256 of each write key Fload answered 410 (revoked) for.
     var revokedKeys: [String] = []
+    /// SHA-256 of each write key Fload answered 401 (unknown) for, and when
+    /// to try it again.
+    var refusedKeys: [String: Date] = [:]
+}
+
+extension StoredState {
+    /// Fields added after the first version are optional on disk, so a
+    /// newer SDK reads the state an older one wrote.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        version = try container.decodeIfPresent(Int.self, forKey: .version) ?? 1
+        installReference = try container.decode(String.self, forKey: .installReference)
+        firstLaunchAt = try container.decode(Date.self, forKey: .firstLaunchAt)
+        device = try container.decode(DeviceFacts.self, forKey: .device)
+        queue = try container.decode([QueuedRequest].self, forKey: .queue)
+        lastUserId = try container.decodeIfPresent(String.self, forKey: .lastUserId)
+        revokedKeys = try container.decodeIfPresent([String].self, forKey: .revokedKeys) ?? []
+        refusedKeys = try container.decodeIfPresent([String: Date].self, forKey: .refusedKeys) ?? [:]
+    }
 }
 
 /// The app and device as they were on the install's first launch.

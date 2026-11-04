@@ -99,7 +99,7 @@ final class ContractTests: XCTestCase {
         XCTAssertEqual(Delivery.outcome(of: .init(status: 202)), .delivered)
         XCTAssertEqual(Delivery.outcome(of: .init(status: 200)), .delivered)
         XCTAssertEqual(Delivery.outcome(of: .init(status: 400)), .dropped(status: 400))
-        XCTAssertEqual(Delivery.outcome(of: .init(status: 401)), .dropped(status: 401))
+        XCTAssertEqual(Delivery.outcome(of: .init(status: 401)), .keyRefused)
         XCTAssertEqual(Delivery.outcome(of: .init(status: 413)), .dropped(status: 413))
         XCTAssertEqual(Delivery.outcome(of: .init(status: 410)), .revoked)
         XCTAssertEqual(Delivery.outcome(of: .init(status: 429, retryAfter: "12")), .rateLimited(after: 12))
