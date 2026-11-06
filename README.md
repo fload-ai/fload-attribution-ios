@@ -42,6 +42,22 @@ Fload.setUserId(Purchases.shared.appUserID)
 The key is your app's public write key from Fload. It can only report
 installs for that one app, so it is safe to ship in the binary.
 
+### Objective-C
+
+`FLDAttribution` is the same API for Objective-C, and for bridges that only
+see the Objective-C runtime (.NET, Unity `.mm` plugins, React Native, Kotlin/Native):
+
+```objc
+@import FloadAttribution;
+
+[FLDAttribution configureWithKey:@"fload_pk_…"];
+// or, for tests: [FLDAttribution configureWithKey:key endpoint:@"http://localhost:3001" logLevel:FLDLogLevelDebug];
+[FLDAttribution setUserId:appUserId];
+NSString *reference = FLDAttribution.installReference;   // nil before configure
+```
+
+The class and selector names are a public contract and stay stable.
+
 ## What it does
 
 - On the first launch with the SDK, makes a random install reference and
@@ -73,8 +89,9 @@ and above by default. It never logs the key, the token or the user id.
   counts as an install, for existing users too. Apple's token tells Fload
   whether that device's install came from Apple Ads.
 - **Reinstalls** and devices restored from a backup are new installs.
-- The **Simulator** has no AdServices token; installs from it arrive as
-  `token_error`.
+- The **Simulator** has no AdServices token: Apple answers
+  `platformNotSupported`, so installs from it arrive as `unsupported_os`
+  (seen on the iOS 26.4 simulator).
 
 ## Privacy
 
