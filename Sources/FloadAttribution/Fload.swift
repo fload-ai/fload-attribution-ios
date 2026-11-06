@@ -13,7 +13,7 @@ import Foundation
 /// ```
 public enum Fload {
     /// The SDK's version, sent with every install.
-    public static let sdkVersion = "0.1.0"
+    public static let sdkVersion = "1.0.2"
 
     /// Starts the SDK. Call it once, early in launch (`application(_:didFinishLaunchingWithOptions:)`
     /// or your `App`'s `init`). It returns at once; the network work runs in the background.
