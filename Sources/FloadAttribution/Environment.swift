@@ -15,8 +15,10 @@ struct Environment: Sendable {
     /// Whether the engine sleeps until its next due request and flushes itself.
     /// Off in tests, which call `flush()` directly.
     var schedulesWakeups: Bool
+    /// This SDK, and the wrapper around it, as every request names them.
+    var sdk = Wire.SDK()
 
-    static func live(endpoint: URL, store: StateStore, logger: SDKLogger) -> Environment {
+    static func live(endpoint: URL, store: StateStore, logger: SDKLogger, wrapper: FloadWrapper? = nil) -> Environment {
         Environment(
             endpoint: endpoint,
             transport: URLSessionTransport(),
@@ -27,7 +29,8 @@ struct Environment: Sendable {
             jitter: { Double.random(in: 0.5...1) },
             makeId: { UUID().uuidString.lowercased() },
             logger: logger,
-            schedulesWakeups: true
+            schedulesWakeups: true,
+            sdk: Wire.SDK(wrapper: wrapper)
         )
     }
 }

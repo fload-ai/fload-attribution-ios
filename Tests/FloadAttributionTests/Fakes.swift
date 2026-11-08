@@ -122,6 +122,7 @@ final class Harness {
     let clock = ManualClock()
     let ids = Counter()
     var jitter = 1.0
+    var wrapper: FloadWrapper?
 
     init(tokens: FakeTokens = FakeTokens(.token("dG9rZW4=")), store: MemoryStore = MemoryStore()) {
         self.tokens = tokens
@@ -142,7 +143,8 @@ final class Harness {
             jitter: { jitter },
             makeId: { "id-\(String(format: "%08d", ids.next()))" },
             logger: SDKLogger(level: .none),
-            schedulesWakeups: false
+            schedulesWakeups: false,
+            sdk: Wire.SDK(wrapper: wrapper)
         )
     }
 

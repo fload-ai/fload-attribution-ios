@@ -55,7 +55,7 @@ final class Runtime: @unchecked Sendable {
         lock.withLock {
             guard engine == nil else { return .alreadyConfigured }
             guard let store = try? FileStateStore.inApplicationSupport() else { return .unavailable }
-            let environment = Environment.live(endpoint: options.endpoint, store: store, logger: logger)
+            let environment = Environment.live(endpoint: options.endpoint, store: store, logger: logger, wrapper: options.wrapper)
             guard let state = Bootstrap.loadOrCreate(environment: environment) else { return .unavailable }
             let made = Engine(key: key, state: state, environment: environment)
             engine = made

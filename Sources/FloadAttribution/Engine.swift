@@ -133,7 +133,8 @@ actor Engine {
                     body: Wire.Identify(
                         requestId: request.requestId,
                         installReference: state.installReference,
-                        appUserId: request.appUserId ?? ""
+                        appUserId: request.appUserId ?? "",
+                        sdk: environment.sdk
                     )
                 )
             }
@@ -167,6 +168,7 @@ actor Engine {
             osVersion: device.osVersion,
             deviceModel: device.deviceModel,
             locale: device.locale,
+            sdk: environment.sdk,
             firstLaunchAt: Wire.timestamp(state.firstLaunchAt),
             appleAds: Wire.appleAds(token, at: environment.now()),
             appUserId: appUserId

@@ -38,6 +38,25 @@ public final class FLDAttribution: NSObject {
         Fload.configure(key: key, options: options(endpoint: endpoint, logLevel: logLevel))
     }
 
+    /// ``Fload/configure(key:options:)`` for a cross-platform wrapper, which
+    /// names itself (``FloadWrapper``). A nil or blank name or version sends
+    /// no wrapper.
+    @objc(configureWithKey:endpoint:logLevel:wrapperName:wrapperVersion:)
+    public static func configure(
+        key: String,
+        endpoint: String?,
+        logLevel: FLDLogLevel,
+        wrapperName: String?,
+        wrapperVersion: String?
+    ) {
+        Fload.configure(key: key, options: options(
+            endpoint: endpoint,
+            logLevel: logLevel,
+            wrapperName: wrapperName,
+            wrapperVersion: wrapperVersion
+        ))
+    }
+
     /// ``Fload/setUserId(_:)``.
     @objc(setUserId:)
     public static func setUserId(_ userId: String) {
@@ -47,8 +66,16 @@ public final class FLDAttribution: NSObject {
     /// ``Fload/installReference``: nil before configure.
     @objc public static var installReference: String? { Fload.installReference }
 
-    static func options(endpoint: String?, logLevel: FLDLogLevel) -> FloadOptions {
+    static func options(
+        endpoint: String?,
+        logLevel: FLDLogLevel,
+        wrapperName: String? = nil,
+        wrapperVersion: String? = nil
+    ) -> FloadOptions {
         var options = FloadOptions()
+        if let wrapperName, let wrapperVersion {
+            options.wrapper = FloadWrapper(name: wrapperName, version: wrapperVersion)
+        }
         if let endpoint, let url = URL(string: endpoint), url.scheme != nil, url.host != nil {
             options.endpoint = url
         }

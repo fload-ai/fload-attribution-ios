@@ -11,6 +11,31 @@ enum Wire {
     struct SDK: Encodable, Equatable {
         var name = Wire.sdkName
         var version = Fload.sdkVersion
+        var wrapper: Wrapper?
+
+        /// A wrapper with a blank or overlong name or version is left out.
+        init(wrapper: FloadWrapper? = nil) {
+            self.wrapper = wrapper.flatMap(Wrapper.init)
+        }
+    }
+
+    struct Wrapper: Encodable, Equatable {
+        var name: String
+        var version: String
+
+        /// The contract's limit on each; a longer one would make Fload refuse
+        /// the whole request, so the wrapper is left out instead.
+        static let maxLength = 64
+
+        init?(_ wrapper: FloadWrapper) {
+            let name = wrapper.name.trimmingCharacters(in: .whitespacesAndNewlines)
+            let version = wrapper.version.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !name.isEmpty, !version.isEmpty,
+                  name.utf16.count <= Self.maxLength, version.utf16.count <= Self.maxLength
+            else { return nil }
+            self.name = name
+            self.version = version
+        }
     }
 
     struct AppleAds: Encodable, Equatable {
@@ -42,6 +67,8 @@ enum Wire {
         var installReference: String
         var platform = "ios"
         var appUserId: String
+        /// Servers before FLO-3957 ignore it.
+        var sdk = SDK()
     }
 
     static func appleAds(_ token: TokenResult, at fetchedAt: Date) -> AppleAds {
