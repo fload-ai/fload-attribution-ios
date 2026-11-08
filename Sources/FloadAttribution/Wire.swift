@@ -13,7 +13,7 @@ enum Wire {
         var version = Fload.sdkVersion
         var wrapper: Wrapper?
 
-        /// A wrapper with a blank name or version is left out.
+        /// A wrapper with a blank or overlong name or version is left out.
         init(wrapper: FloadWrapper? = nil) {
             self.wrapper = wrapper.flatMap(Wrapper.init)
         }
@@ -23,10 +23,16 @@ enum Wire {
         var name: String
         var version: String
 
+        /// The contract's limit on each; a longer one would make Fload refuse
+        /// the whole request, so the wrapper is left out instead.
+        static let maxLength = 64
+
         init?(_ wrapper: FloadWrapper) {
             let name = wrapper.name.trimmingCharacters(in: .whitespacesAndNewlines)
             let version = wrapper.version.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !name.isEmpty, !version.isEmpty else { return nil }
+            guard !name.isEmpty, !version.isEmpty,
+                  name.utf16.count <= Self.maxLength, version.utf16.count <= Self.maxLength
+            else { return nil }
             self.name = name
             self.version = version
         }

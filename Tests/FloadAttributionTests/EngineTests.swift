@@ -89,6 +89,12 @@ final class EngineTests: XCTestCase {
         XCTAssertNil(sdk["wrapper"])
     }
 
+    func testAWrapperLongerThanTheContractAllowsIsLeftOut() {
+        XCTAssertNil(Wire.SDK(wrapper: FloadWrapper(name: "flutter", version: "1.0.0-" + String(repeating: "x", count: 60))).wrapper)
+        XCTAssertNil(Wire.SDK(wrapper: FloadWrapper(name: String(repeating: "x", count: 65), version: "1.0.0")).wrapper)
+        XCTAssertNotNil(Wire.SDK(wrapper: FloadWrapper(name: "flutter", version: String(repeating: "1", count: 64))).wrapper)
+    }
+
     // MARK: Apple's token
 
     func testUnsupportedPlatformIsSentAsUnsupportedOs() async throws {
