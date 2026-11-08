@@ -66,6 +66,25 @@ final class ContractTests: XCTestCase {
         XCTAssertEqual(request.url?.absoluteString, "http://localhost:4101/attribution/v1/identify")
     }
 
+    func testIdentifyNamesTheSdkAndItsWrapperInTheContractsShape() throws {
+        let request = try Wire.request(
+            endpoint: URL(string: "https://ingest.fload.com")!,
+            path: Wire.identifyPath,
+            key: Harness.key,
+            body: Wire.Identify(
+                requestId: "req-00000001",
+                installReference: "ins-00000001",
+                appUserId: "u",
+                sdk: Wire.SDK(wrapper: FloadWrapper(name: "dotnet", version: "1.1.0"))
+            )
+        )
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: request.httpBody!) as? [String: Any])
+        XCTAssertEqual(Set(json.keys), ["requestId", "installReference", "platform", "appUserId", "sdk"])
+        let sdk = try XCTUnwrap(json["sdk"] as? [String: Any])
+        XCTAssertEqual(Set(sdk.keys), ["name", "version", "wrapper"])
+        XCTAssertEqual(sdk["wrapper"] as? [String: String], ["name": "dotnet", "version": "1.1.0"])
+    }
+
     func testTokenIsSentExactlyWhenStatusIsToken() {
         let now = Date()
         XCTAssertNotNil(Wire.appleAds(.token("YQ=="), at: now).token)

@@ -58,6 +58,24 @@ NSString *reference = FLDAttribution.installReference;   // nil before configure
 
 The class and selector names are a public contract and stay stable.
 
+### For wrapper authors
+
+A cross-platform wrapper names itself, so Fload can tell which wrapper and
+version sent an install. Apps calling the SDK directly skip this.
+
+```swift
+Fload.configure(key: key, options: FloadOptions(wrapper: FloadWrapper(name: "flutter", version: "1.1.0")))
+```
+
+```objc
+[FLDAttribution configureWithKey:key endpoint:nil logLevel:FLDLogLevelWarning
+                     wrapperName:@"react-native" wrapperVersion:@"1.1.0"];
+```
+
+`name` is one of `flutter`, `react-native`, `capacitor`, `cordova`, `unity`,
+`dotnet`, `kmp`; `version` is the wrapper's own semver. Fload ignores a
+wrapper it does not know and still records the install.
+
 ## What it does
 
 - On the first launch with the SDK, makes a random install reference and

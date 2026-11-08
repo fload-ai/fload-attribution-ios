@@ -13,7 +13,7 @@ import Foundation
 /// ```
 public enum Fload {
     /// The SDK's version, sent with every install.
-    public static let sdkVersion = "1.0.2"
+    public static let sdkVersion = "1.1.0"
 
     /// Starts the SDK. Call it once, early in launch (`application(_:didFinishLaunchingWithOptions:)`
     /// or your `App`'s `init`). It returns at once; the network work runs in the background.
@@ -45,13 +45,35 @@ public struct FloadOptions: Sendable {
     public var endpoint: URL
     /// What the SDK writes to the unified log (subsystem `com.fload.attribution`).
     public var logLevel: FloadLogLevel
+    /// The cross-platform wrapper around this SDK, set by the wrapper itself
+    /// (Flutter, React Native, .NET...). Apps calling the SDK directly leave it nil.
+    public var wrapper: FloadWrapper?
 
     public init(
         endpoint: URL = URL(string: "https://ingest.fload.com")!,
-        logLevel: FloadLogLevel = .warning
+        logLevel: FloadLogLevel = .warning,
+        wrapper: FloadWrapper? = nil
     ) {
         self.endpoint = endpoint
         self.logLevel = logLevel
+        self.wrapper = wrapper
+    }
+}
+
+/// The wrapper that calls this SDK, sent with every request as `sdk.wrapper`
+/// so Fload knows which wrapper, and which version of it, sent an install.
+///
+/// For wrapper authors: `name` is one of `flutter`, `react-native`,
+/// `capacitor`, `cordova`, `unity`, `dotnet`, `kmp`, and `version` is the
+/// wrapper's own semver. Fload ignores a wrapper it does not know; the
+/// install is still recorded.
+public struct FloadWrapper: Sendable, Equatable {
+    public var name: String
+    public var version: String
+
+    public init(name: String, version: String) {
+        self.name = name
+        self.version = version
     }
 }
 

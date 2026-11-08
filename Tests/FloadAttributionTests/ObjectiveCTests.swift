@@ -37,4 +37,14 @@ final class ObjectiveCTests: XCTestCase {
             URL(string: "http://localhost:3901")
         )
     }
+
+    func testObjectiveCCallersNameTheirWrapper() {
+        let options = FLDAttribution.options(endpoint: nil, logLevel: .warning, wrapperName: "react-native", wrapperVersion: "1.2.0")
+        XCTAssertEqual(options.wrapper, FloadWrapper(name: "react-native", version: "1.2.0"))
+        XCTAssertNil(FLDAttribution.options(endpoint: nil, logLevel: .warning).wrapper)
+        XCTAssertNil(FLDAttribution.options(endpoint: nil, logLevel: .warning, wrapperName: "unity", wrapperVersion: nil).wrapper)
+        XCTAssertNotNil(NSClassFromString("FLDAttribution").flatMap { cls in
+            (cls as AnyObject).responds(to: NSSelectorFromString("configureWithKey:endpoint:logLevel:wrapperName:wrapperVersion:")) ? cls : nil
+        })
+    }
 }

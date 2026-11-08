@@ -51,6 +51,44 @@ final class EngineTests: XCTestCase {
         XCTAssertNil(body["playReferrer"])
     }
 
+    func testAWrapperIsNamedOnTheInstallAndEveryIdentify() async throws {
+        let harness = Harness()
+        harness.wrapper = FloadWrapper(name: "flutter", version: "1.1.0")
+        let engine = try XCTUnwrap(harness.launch())
+        await engine.flush()
+        await engine.setUserId("user_1")
+        await engine.flush()
+
+        let sdk: [String: Any] = ["name": "fload-attribution-ios", "version": Fload.sdkVersion,
+                                  "wrapper": ["name": "flutter", "version": "1.1.0"]]
+        XCTAssertEqual(harness.transport.paths, ["/attribution/v1/installs", "/attribution/v1/identify"])
+        for body in harness.transport.bodies {
+            XCTAssertEqual(body["sdk"] as? NSDictionary, sdk as NSDictionary)
+        }
+    }
+
+    func testANativeAppNamesNoWrapper() async throws {
+        let harness = Harness()
+        let engine = try XCTUnwrap(harness.launch())
+        await engine.flush()
+        await engine.setUserId("user_1")
+        await engine.flush()
+
+        for body in harness.transport.bodies {
+            XCTAssertEqual(body["sdk"] as? [String: String], ["name": "fload-attribution-ios", "version": Fload.sdkVersion])
+        }
+    }
+
+    func testABlankWrapperIsLeftOut() async throws {
+        let harness = Harness()
+        harness.wrapper = FloadWrapper(name: "  ", version: "1.0.0")
+        let engine = try XCTUnwrap(harness.launch())
+        await engine.flush()
+
+        let sdk = try XCTUnwrap(harness.transport.bodies.first?["sdk"] as? [String: Any])
+        XCTAssertNil(sdk["wrapper"])
+    }
+
     // MARK: Apple's token
 
     func testUnsupportedPlatformIsSentAsUnsupportedOs() async throws {
@@ -300,7 +338,7 @@ final class EngineTests: XCTestCase {
         XCTAssertEqual(harness.transport.paths, ["/attribution/v1/installs", "/attribution/v1/identify"])
         let identify = try XCTUnwrap(harness.transport.bodies.last)
         let state = await engine.snapshot
-        XCTAssertEqual(Set(identify.keys), ["requestId", "installReference", "platform", "appUserId"])
+        XCTAssertEqual(Set(identify.keys), ["requestId", "installReference", "platform", "appUserId", "sdk"])
         XCTAssertEqual(identify["installReference"] as? String, state.installReference)
         XCTAssertEqual(identify["platform"] as? String, "ios")
         XCTAssertEqual(identify["appUserId"] as? String, "user-1")
