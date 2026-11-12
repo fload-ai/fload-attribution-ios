@@ -158,5 +158,22 @@ final class ContractTests: XCTestCase {
         }
         XCTAssertNotNil(facts.osVersion)
         XCTAssertNotNil(facts.deviceModel)
+        // A test runner may have no Documents or Library yet; when known, it is past.
+        if let installed = facts.originalInstallAt {
+            XCTAssertLessThanOrEqual(installed, Date())
+        }
+    }
+
+    func testTheFirstInstallTimeIsTheDirectorysCreationDate() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("fload-created-\(UUID().uuidString)", isDirectory: true)
+        let before = Date().addingTimeInterval(-1)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let created = try XCTUnwrap(DeviceInfo.creationDate(of: directory))
+        XCTAssertGreaterThanOrEqual(created, before)
+        XCTAssertLessThanOrEqual(created, Date())
+        XCTAssertNil(DeviceInfo.creationDate(of: directory.appendingPathComponent("missing")))
     }
 }

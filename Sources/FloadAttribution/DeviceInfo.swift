@@ -4,7 +4,11 @@ enum DeviceInfo {
     /// The contract's `shortText`: trimmed, 1 to 64 characters.
     static let shortTextLimit = 64
 
-    static func current(bundle: Bundle = .main, processInfo: ProcessInfo = .processInfo) -> DeviceFacts {
+    static func current(
+        bundle: Bundle = .main,
+        processInfo: ProcessInfo = .processInfo,
+        fileManager: FileManager = .default
+    ) -> DeviceFacts {
         let info = bundle.infoDictionary ?? [:]
         let os = processInfo.operatingSystemVersion
         let osVersion = os.patchVersion > 0
@@ -16,8 +20,28 @@ enum DeviceInfo {
             appBuild: shortText(info["CFBundleVersion"] as? String),
             osVersion: shortText(osVersion),
             deviceModel: shortText(processInfo.environment["SIMULATOR_MODEL_IDENTIFIER"] ?? machine()),
-            locale: shortText(Locale.current.identifier)
+            locale: shortText(Locale.current.identifier),
+            originalInstallAt: appInstalledAt(fileManager)
         )
+    }
+
+    /// When the app was first installed on this device: the creation date of
+    /// its Documents directory (else Library), both made with the app's data
+    /// container at install and kept across updates (FLO-4496). An update to
+    /// the first build with the SDK keeps the old date, so Fload counts an
+    /// existing user apart from a new download. A file timestamp inside the
+    /// app's own container (privacy manifest reason C617.1). Nil when neither
+    /// can be read.
+    static func appInstalledAt(_ fileManager: FileManager) -> Date? {
+        let directories: [FileManager.SearchPathDirectory] = [.documentDirectory, .libraryDirectory]
+        return directories.lazy
+            .compactMap { fileManager.urls(for: $0, in: .userDomainMask).first }
+            .compactMap(creationDate)
+            .first
+    }
+
+    static func creationDate(of directory: URL) -> Date? {
+        try? directory.resourceValues(forKeys: [.creationDateKey]).creationDate
     }
 
     /// The bundle id; the contract needs 1 to 256 characters.

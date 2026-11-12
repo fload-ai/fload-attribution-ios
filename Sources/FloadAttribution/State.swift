@@ -43,6 +43,9 @@ struct DeviceFacts: Codable, Equatable, Sendable {
     var osVersion: String?
     var deviceModel: String?
     var locale: String?
+    /// When the app was first installed on this device, if known (FLO-4496).
+    /// Optional on disk: an older SDK's state has none.
+    var originalInstallAt: Date?
 }
 
 struct QueuedRequest: Codable, Equatable, Sendable {

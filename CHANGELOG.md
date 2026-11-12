@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.2.0
+
+- The install says when the app was first installed on the device:
+  `originalInstallAt`, the creation date of the app's Documents directory,
+  which an update keeps (FLO-4496). An existing user's first launch of the
+  first build with the SDK is an install too; with this, Fload counts those
+  users apart from new downloads. Left out when it cannot be read. Fload
+  servers before FLO-4496 ignore it.
+- The privacy manifest declares one required-reason API for it: a file
+  timestamp inside the app's own container (`C617.1`).
+- No API change.
+
 ## 1.1.0
 
 - `FloadOptions.wrapper` (`FloadWrapper(name:version:)`): a cross-platform

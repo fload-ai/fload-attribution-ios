@@ -80,7 +80,9 @@ wrapper it does not know and still records the install.
 
 - On the first launch with the SDK, makes a random install reference and
   reports the install once: bundle id, app version and build, OS version,
-  device model, locale, first-launch time, and Apple's AdServices
+  device model, locale, first-launch time, when the app was first installed
+  on the device (from 1.2.0: its Documents directory's creation date), and
+  Apple's AdServices
   attribution token (`AAAttribution.attributionToken()`). Fload swaps the
   token with Apple for the attribution record server side.
 - `setUserId` sends your user id with the install, or afterwards in a
@@ -105,7 +107,10 @@ and above by default. It never logs the key, the token or the user id.
 
 - **Existing users:** the first launch of an app version with the SDK
   counts as an install, for existing users too. Apple's token tells Fload
-  whether that device's install came from Apple Ads.
+  whether that device's install came from Apple Ads. From 1.2.0 the install
+  also says when the app was first installed on the device, which survives
+  updates, so Fload counts existing users updating to the SDK build apart
+  from new downloads.
 - **Reinstalls** and devices restored from a backup are new installs.
 - The **Simulator** has no AdServices token: Apple answers
   `platformNotSupported`, so installs from it arrive as `unsupported_os`
@@ -114,7 +119,9 @@ and above by default. It never logs the key, the token or the user id.
 ## Privacy
 
 `PrivacyInfo.xcprivacy` ships with the package: no tracking, no tracking
-domains, no required-reason APIs. Collected, linked to the user, not used for
+domains. One required-reason API from 1.2.0: a file timestamp inside the
+app's own container (reason C617.1), the Documents directory's creation date
+for when the app was first installed. Collected, linked to the user, not used for
 tracking, for analytics: a device ID (the random install reference),
 advertising data (the AdServices token) and a user ID (only when you call
 `setUserId`). Declare the same in your App Store privacy answers.
