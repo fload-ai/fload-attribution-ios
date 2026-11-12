@@ -26,16 +26,22 @@ enum DeviceInfo {
     }
 
     /// When the app was first installed on this device: the creation date of
-    /// its Documents directory, made with the app's data container at install
-    /// and kept across updates (FLO-4496). An update to the first build with
-    /// the SDK keeps the old date, so Fload counts an existing user apart from
-    /// a new download. A file timestamp inside the app's own container
-    /// (privacy manifest reason C617.1). Nil when it cannot be read.
+    /// its Documents directory (else Library), both made with the app's data
+    /// container at install and kept across updates (FLO-4496). An update to
+    /// the first build with the SDK keeps the old date, so Fload counts an
+    /// existing user apart from a new download. A file timestamp inside the
+    /// app's own container (privacy manifest reason C617.1). Nil when neither
+    /// can be read.
     static func appInstalledAt(_ fileManager: FileManager) -> Date? {
-        guard let documents = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first else {
-            return nil
-        }
-        return try? documents.resourceValues(forKeys: [.creationDateKey]).creationDate
+        let directories: [FileManager.SearchPathDirectory] = [.documentDirectory, .libraryDirectory]
+        return directories.lazy
+            .compactMap { fileManager.urls(for: $0, in: .userDomainMask).first }
+            .compactMap(creationDate)
+            .first
+    }
+
+    static func creationDate(of directory: URL) -> Date? {
+        try? directory.resourceValues(forKeys: [.creationDateKey]).creationDate
     }
 
     /// The bundle id; the contract needs 1 to 256 characters.
