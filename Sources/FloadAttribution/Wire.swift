@@ -58,6 +58,9 @@ enum Wire {
         var locale: String?
         var sdk = SDK()
         var firstLaunchAt: String
+        /// When the app was first installed on the device (FLO-4496). Left out
+        /// when unknown; servers before FLO-4496 ignore it.
+        var originalInstallAt: String?
         var appleAds: AppleAds
         var appUserId: String?
     }

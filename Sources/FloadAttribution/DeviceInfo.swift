@@ -4,7 +4,11 @@ enum DeviceInfo {
     /// The contract's `shortText`: trimmed, 1 to 64 characters.
     static let shortTextLimit = 64
 
-    static func current(bundle: Bundle = .main, processInfo: ProcessInfo = .processInfo) -> DeviceFacts {
+    static func current(
+        bundle: Bundle = .main,
+        processInfo: ProcessInfo = .processInfo,
+        fileManager: FileManager = .default
+    ) -> DeviceFacts {
         let info = bundle.infoDictionary ?? [:]
         let os = processInfo.operatingSystemVersion
         let osVersion = os.patchVersion > 0
@@ -16,8 +20,22 @@ enum DeviceInfo {
             appBuild: shortText(info["CFBundleVersion"] as? String),
             osVersion: shortText(osVersion),
             deviceModel: shortText(processInfo.environment["SIMULATOR_MODEL_IDENTIFIER"] ?? machine()),
-            locale: shortText(Locale.current.identifier)
+            locale: shortText(Locale.current.identifier),
+            originalInstallAt: appInstalledAt(fileManager)
         )
+    }
+
+    /// When the app was first installed on this device: the creation date of
+    /// its Documents directory, made with the app's data container at install
+    /// and kept across updates (FLO-4496). An update to the first build with
+    /// the SDK keeps the old date, so Fload counts an existing user apart from
+    /// a new download. A file timestamp inside the app's own container
+    /// (privacy manifest reason C617.1). Nil when it cannot be read.
+    static func appInstalledAt(_ fileManager: FileManager) -> Date? {
+        guard let documents = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            return nil
+        }
+        return try? documents.resourceValues(forKeys: [.creationDateKey]).creationDate
     }
 
     /// The bundle id; the contract needs 1 to 256 characters.

@@ -48,6 +48,7 @@ final class StorageTests: XCTestCase {
         XCTAssertEqual(state.installReference, "ins-00000001")
         XCTAssertTrue(state.refusedKeys.isEmpty)
         XCTAssertTrue(state.revokedKeys.isEmpty)
+        XCTAssertNil(state.device.originalInstallAt, "an older SDK did not record it")
     }
 
     func testTheDirectoryIsExcludedFromBackup() throws {
@@ -76,7 +77,12 @@ final class StorageTests: XCTestCase {
         )
         XCTAssertEqual(plist["NSPrivacyTracking"] as? Bool, false)
         XCTAssertEqual((plist["NSPrivacyTrackingDomains"] as? [Any])?.count, 0)
-        XCTAssertEqual((plist["NSPrivacyAccessedAPITypes"] as? [Any])?.count, 0)
+        // The install's first install time is the app container's creation
+        // date: a file timestamp inside the app container (C617.1), nothing else.
+        let accessed = (plist["NSPrivacyAccessedAPITypes"] as? [[String: Any]]) ?? []
+        XCTAssertEqual(accessed.count, 1)
+        XCTAssertEqual(accessed.first?["NSPrivacyAccessedAPIType"] as? String, "NSPrivacyAccessedAPICategoryFileTimestamp")
+        XCTAssertEqual(accessed.first?["NSPrivacyAccessedAPITypeReasons"] as? [String], ["C617.1"])
         let collected = (plist["NSPrivacyCollectedDataTypes"] as? [[String: Any]]) ?? []
         XCTAssertFalse(collected.isEmpty)
         XCTAssertTrue(collected.allSatisfy { $0["NSPrivacyCollectedDataTypeTracking"] as? Bool == false })

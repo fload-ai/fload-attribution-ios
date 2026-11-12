@@ -170,6 +170,7 @@ actor Engine {
             locale: device.locale,
             sdk: environment.sdk,
             firstLaunchAt: Wire.timestamp(state.firstLaunchAt),
+            originalInstallAt: device.originalInstallAt.map(Wire.timestamp),
             appleAds: Wire.appleAds(token, at: environment.now()),
             appUserId: appUserId
         )

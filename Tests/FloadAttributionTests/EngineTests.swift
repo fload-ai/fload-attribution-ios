@@ -51,6 +51,29 @@ final class EngineTests: XCTestCase {
         XCTAssertNil(body["playReferrer"])
     }
 
+    func testTheInstallSaysWhenTheAppWasFirstInstalledOnTheDevice() async throws {
+        let harness = Harness()
+        // Installed long before this first launch with the SDK: an update.
+        harness.device.originalInstallAt = Date(timeIntervalSince1970: 1_700_000_000.5)
+        let engine = try XCTUnwrap(harness.launch())
+        await engine.flush()
+
+        let body = try XCTUnwrap(harness.transport.bodies.first)
+        XCTAssertEqual(body["originalInstallAt"] as? String, "2023-11-14T22:13:20.500Z")
+        // Nothing on the device records the first install's version.
+        XCTAssertNil(body["originalAppVersion"])
+    }
+
+    func testAnUnknownFirstInstallTimeIsLeftOut() async throws {
+        let harness = Harness()
+        harness.device.originalInstallAt = nil
+        let engine = try XCTUnwrap(harness.launch())
+        await engine.flush()
+
+        let body = try XCTUnwrap(harness.transport.bodies.first)
+        XCTAssertNil(body["originalInstallAt"])
+    }
+
     func testAWrapperIsNamedOnTheInstallAndEveryIdentify() async throws {
         let harness = Harness()
         harness.wrapper = FloadWrapper(name: "flutter", version: "1.1.0")

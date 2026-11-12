@@ -123,6 +123,7 @@ final class Harness {
     let ids = Counter()
     var jitter = 1.0
     var wrapper: FloadWrapper?
+    var device = DeviceFixture.facts
 
     init(tokens: FakeTokens = FakeTokens(.token("dG9rZW4=")), store: MemoryStore = MemoryStore()) {
         self.tokens = tokens
@@ -133,12 +134,13 @@ final class Harness {
         let clock = clock
         let ids = ids
         let jitter = jitter
+        let device = device
         return Environment(
             endpoint: URL(string: "https://ingest.example.test")!,
             transport: transport,
             tokens: tokens,
             store: store,
-            device: { DeviceFixture.facts },
+            device: { device },
             now: { clock.now },
             jitter: { jitter },
             makeId: { "id-\(String(format: "%08d", ids.next()))" },

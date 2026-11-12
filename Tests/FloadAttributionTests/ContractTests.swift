@@ -150,7 +150,7 @@ final class ContractTests: XCTestCase {
         XCTAssertEqual(DeviceInfo.appId(nil), "unknown")
     }
 
-    func testCurrentDeviceFactsFitTheContract() {
+    func testCurrentDeviceFactsFitTheContract() throws {
         let facts = DeviceInfo.current()
         XCTAssertFalse(facts.appId.isEmpty)
         for value in [facts.appVersion, facts.appBuild, facts.osVersion, facts.deviceModel, facts.locale] {
@@ -158,5 +158,8 @@ final class ContractTests: XCTestCase {
         }
         XCTAssertNotNil(facts.osVersion)
         XCTAssertNotNil(facts.deviceModel)
+        // The app's data container exists from its install, so it is known and past.
+        let installed = try XCTUnwrap(facts.originalInstallAt)
+        XCTAssertLessThanOrEqual(installed, Date())
     }
 }
